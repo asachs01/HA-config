@@ -37,7 +37,6 @@ void AdafruitSoilSensorComponent::update()
   float temp_f = (temp_c * 1.8) + 32.0;
   temp_f = temp_f * this->temperature_calibration.slope + this->temperature_calibration.offset;
 
-  // Replace map() with direct calculation and bounds checking
   int32_t moisture_val;
   if (this->moisture_calibration.wet == this->moisture_calibration.dry) {
     moisture_val = 50;  // Default to 50% if calibration values are equal

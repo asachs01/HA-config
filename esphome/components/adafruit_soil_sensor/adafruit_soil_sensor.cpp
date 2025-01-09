@@ -1,6 +1,8 @@
 #include "esphome.h"
 #include "adafruit_soil_sensor.h"
 #include "esphome/core/log.h"
+#include "esphome/core/helpers.h"
+#include <algorithm>  // for std::max and std::min
 
 namespace esphome {
 namespace adafruit_soil_sensor {
@@ -30,16 +32,23 @@ void AdafruitSoilSensorComponent::setup()
 void AdafruitSoilSensorComponent::update() 
 {
   float temp_c = this->get_temperature_();
-  uint16_t moisture = this->get_moisture_();
+  uint16_t raw_moisture = this->get_moisture_();
 
   float temp_f = (temp_c * 1.8) + 32.0;
-
   temp_f = temp_f * this->temperature_calibration.slope + this->temperature_calibration.offset;
 
-  moisture = map(moisture, this->moisture_calibration.dry, this->moisture_calibration.wet, 0, 100);
+  // Replace map() with direct calculation and bounds checking
+  int32_t moisture_val;
+  if (this->moisture_calibration.wet == this->moisture_calibration.dry) {
+    moisture_val = 50;  // Default to 50% if calibration values are equal
+  } else {
+    moisture_val = ((int32_t)raw_moisture - this->moisture_calibration.dry) * 100 / 
+                  (this->moisture_calibration.wet - this->moisture_calibration.dry);
+    moisture_val = std::max(0, std::min(100, moisture_val));
+  }
 
   this->temperature_sensor_->publish_state(temp_f);
-  this->moisture_sensor_->publish_state(moisture);
+  this->moisture_sensor_->publish_state(moisture_val);
 }
 
 float AdafruitSoilSensorComponent::get_temperature_() 
@@ -49,8 +58,6 @@ float AdafruitSoilSensorComponent::get_temperature_()
   this->write(buf, 2);
   delayMicroseconds(5000);
   this->read(buf, 4);
-
-  // this->read_register16(SEESAW_STATUS_BASE << 8 | SEESAW_STATUS_TEMP, buf, 4);
 
   int32_t ret = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
       ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
@@ -67,8 +74,6 @@ uint16_t AdafruitSoilSensorComponent::get_moisture_()
   do {
     delay(1);
 
-    // Reading the moisture (capacitive touch) sensor requires a delay between the write and read,
-    // so we can't use the read_register16 method.
     this->write(reg, 2);
     delayMicroseconds(5000);
     this->read(buf, 2);
@@ -87,4 +92,4 @@ void AdafruitSoilSensorComponent::dump_config()
 }
 
 }  // namespace adafruit_soil_sensor
-} // namespace esphome
+}  // namespace esphome

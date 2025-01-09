@@ -44,7 +44,7 @@ void AdafruitSoilSensorComponent::update()
   } else {
     moisture_val = ((int32_t)raw_moisture - this->moisture_calibration.dry) * 100 / 
                   (this->moisture_calibration.wet - this->moisture_calibration.dry);
-    moisture_val = std::max(0, std::min(100, moisture_val));
+    moisture_val = std::max<int32_t>(0, std::min<int32_t>(100, moisture_val));
   }
 
   this->temperature_sensor_->publish_state(temp_f);

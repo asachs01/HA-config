@@ -1,4 +1,4 @@
-#include "esphome/core/component.h"
+#include "esphome.h"
 #include "adafruit_soil_sensor.h"
 #include "esphome/core/log.h"
 #include "esphome/core/helpers.h"
